@@ -1,4 +1,4 @@
-import { fetch } from '@tauri-apps/api/http';
+import { fetch } from '@tauri-apps/plugin-http';
 
 export async function translate(text, from, to, options = {}) {
     const { config } = options;
@@ -12,28 +12,35 @@ export async function translate(text, from, to, options = {}) {
         custom_url = 'https://' + custom_url;
     }
 
-    let res = await fetch(
-        `${custom_url}/translate_a/single?dt=at&dt=bd&dt=ex&dt=ld&dt=md&dt=qca&dt=rw&dt=rm&dt=ss&dt=t`,
-        {
-            method: 'GET',
-            headers: { 'content-type': 'application/json' },
-            query: {
-                client: 'gtx',
-                sl: from,
-                tl: to,
-                hl: to,
-                ie: 'UTF-8',
-                oe: 'UTF-8',
-                otf: '1',
-                ssel: '0',
-                tsel: '0',
-                kc: '7',
-                q: text,
-            },
-        }
-    );
+    const apiUrl = new URL(`${custom_url}/translate_a/single`);
+    apiUrl.searchParams.set('dt', 'at');
+    apiUrl.searchParams.set('dt', 'bd');
+    apiUrl.searchParams.set('dt', 'ex');
+    apiUrl.searchParams.set('dt', 'ld');
+    apiUrl.searchParams.set('dt', 'md');
+    apiUrl.searchParams.set('dt', 'qca');
+    apiUrl.searchParams.set('dt', 'rw');
+    apiUrl.searchParams.set('dt', 'rm');
+    apiUrl.searchParams.set('dt', 'ss');
+    apiUrl.searchParams.set('dt', 't');
+    apiUrl.searchParams.set('client', 'gtx');
+    apiUrl.searchParams.set('sl', from);
+    apiUrl.searchParams.set('tl', to);
+    apiUrl.searchParams.set('hl', to);
+    apiUrl.searchParams.set('ie', 'UTF-8');
+    apiUrl.searchParams.set('oe', 'UTF-8');
+    apiUrl.searchParams.set('otf', '1');
+    apiUrl.searchParams.set('ssel', '0');
+    apiUrl.searchParams.set('tsel', '0');
+    apiUrl.searchParams.set('kc', '7');
+    apiUrl.searchParams.set('q', text);
+
+    let res = await fetch(apiUrl.toString(), {
+        method: 'GET',
+        headers: { 'content-type': 'application/json' },
+    });
     if (res.ok) {
-        let result = res.data;
+        let result = await res.json();
         // 词典模式
         if (result[1]) {
             let target = { pronunciations: [], explanations: [], associations: [], sentence: [] };
@@ -68,7 +75,7 @@ export async function translate(text, from, to, options = {}) {
             return target.trim();
         }
     } else {
-        throw `Http Request Error\nHttp Status: ${res.status}\n${JSON.stringify(res.data)}`;
+        throw `Http Request Error\nHttp Status: ${res.status}\n${JSON.stringify(await res.json())}`;
     }
 }
 

@@ -21,9 +21,9 @@ export async function recognize(base64, language, options = {}) {
         };
     });
 
-    const code = jsQR(imgdata.data.data, imgdata.width, imgdata.height);
+    const code = jsQR(imgdata.json().data, imgdata.width, imgdata.height);
     if (code) {
-        return code.data;
+        return code.json();
     } else {
         throw 'QR code not recognized or multiple QR codes exist';
     }

@@ -1,4 +1,4 @@
-import { fetch } from '@tauri-apps/api/http';
+import { fetch } from '@tauri-apps/plugin-http';
 import hmacSHA256 from 'crypto-js/hmac-sha256';
 import hashSHA256 from 'crypto-js/sha256';
 import hex from 'crypto-js/enc-hex';
@@ -106,7 +106,7 @@ export async function recognize(base64, language, options = {}) {
         },
     });
     if (res.ok) {
-        const result = res.data;
+        const result = await res.json();
         if (result['Response']['TextDetections']) {
             let target = '';
             for (let i of result['Response']['TextDetections']) {
@@ -118,7 +118,7 @@ export async function recognize(base64, language, options = {}) {
             throw JSON.stringify(result);
         }
     } else {
-        throw `Http Request Error\nHttp Status: ${res.status}\n${JSON.stringify(res.data)}`;
+        throw `Http Request Error\nHttp Status: ${res.status}\n${JSON.stringify(await res.json())}`;
     }
 }
 

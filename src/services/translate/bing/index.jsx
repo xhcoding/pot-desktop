@@ -1,4 +1,4 @@
-import { fetch } from '@tauri-apps/api/http';
+import { fetch } from '@tauri-apps/plugin-http';
 
 export async function translate(text, from, to) {
     const token_url = 'https://edge.microsoft.com/translate/auth';
@@ -9,18 +9,24 @@ export async function translate(text, from, to) {
             'User-Agent':
                 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36 Edg/113.0.1774.42',
         },
-        responseType: 2,
     });
 
     if (token.ok) {
+        const tokenStr = await token.text();
         const url = 'https://api-edge.cognitive.microsofttranslator.com/translate';
 
-        let res = await fetch(url, {
+        const apiUrl = new URL(url);
+        apiUrl.searchParams.set('from', from);
+        apiUrl.searchParams.set('to', to);
+        apiUrl.searchParams.set('api-version', '3.0');
+        apiUrl.searchParams.set('includeSentenceLength', 'true');
+
+        let res = await fetch(apiUrl.toString(), {
             method: 'POST',
             headers: {
                 accept: '*/*',
                 'accept-language': 'zh-TW,zh;q=0.9,ja;q=0.8,zh-CN;q=0.7,en-US;q=0.6,en;q=0.5',
-                authorization: 'Bearer ' + token.data,
+                authorization: 'Bearer ' + tokenStr,
                 'cache-control': 'no-cache',
                 'content-type': 'application/json',
                 pragma: 'no-cache',
@@ -35,24 +41,18 @@ export async function translate(text, from, to) {
                 'User-Agent':
                     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36 Edg/113.0.1774.42',
             },
-            query: {
-                from: from,
-                to: to,
-                'api-version': '3.0',
-                includeSentenceLength: 'true',
-            },
-            body: { type: 'Json', payload: [{ Text: text }] },
+            body: JSON.stringify([{ Text: text }]),
         });
 
         if (res.ok) {
-            let result = res.data;
+            let result = await res.json();
             if (result[0].translations) {
                 return result[0].translations[0].text.trim();
             } else {
                 throw JSON.stringify(result);
             }
         } else {
-            throw `Http Request Error\nHttp Status: ${res.status}\n${JSON.stringify(res.data)}`;
+            throw `Http Request Error\nHttp Status: ${res.status}\n${JSON.stringify(await res.json())}`;
         }
     } else {
         throw 'Get Token Failed';

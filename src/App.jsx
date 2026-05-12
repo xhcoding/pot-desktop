@@ -1,11 +1,11 @@
-import { appWindow } from '@tauri-apps/api/window';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 import { BrowserRouter } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { warn } from 'tauri-plugin-log-api';
+import { warn } from '@tauri-apps/plugin-log';
 import React, { useEffect } from 'react';
 import { useTheme } from 'next-themes';
 
-import { invoke } from '@tauri-apps/api/tauri';
+import { invoke } from '@tauri-apps/api/core';
 import Screenshot from './window/Screenshot';
 import Translate from './window/Translate';
 import Recognize from './window/Recognize';
@@ -35,10 +35,6 @@ export default function App() {
     const { i18n } = useTranslation();
 
     useEffect(() => {
-        store.load();
-    }, []);
-
-    useEffect(() => {
         if (devMode !== null && devMode) {
             document.addEventListener('keydown', async (e) => {
                 let allowKeys = ['c', 'v', 'x', 'a', 'z', 'y'];
@@ -52,7 +48,7 @@ export default function App() {
                     e.preventDefault();
                 }
                 if (e.key === 'Escape') {
-                    await appWindow.close();
+                    await getCurrentWindow().close();
                 }
             });
         } else {
@@ -65,7 +61,7 @@ export default function App() {
                     e.preventDefault();
                 }
                 if (e.key === 'Escape') {
-                    await appWindow.close();
+                    await getCurrentWindow().close();
                 }
             });
         }
@@ -113,5 +109,5 @@ export default function App() {
         }
     }, [appFont, appFallbackFont, appFontSize]);
 
-    return <BrowserRouter>{windowMap[appWindow.label]}</BrowserRouter>;
+    return <BrowserRouter>{windowMap[getCurrentWindow().label]}</BrowserRouter>;
 }

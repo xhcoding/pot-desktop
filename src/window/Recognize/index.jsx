@@ -1,7 +1,7 @@
-import { readDir, BaseDirectory, readTextFile, exists } from '@tauri-apps/api/fs';
+import { readDir, BaseDirectory, readTextFile, exists } from '@tauri-apps/plugin-fs';
 import { appConfigDir, join } from '@tauri-apps/api/path';
-import { convertFileSrc } from '@tauri-apps/api/tauri';
-import { appWindow } from '@tauri-apps/api/window';
+import { convertFileSrc } from '@tauri-apps/api/core';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 import React, { useState, useEffect } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { Button } from '@nextui-org/react';
@@ -22,28 +22,24 @@ let blurTimeout = null;
 
 const listenBlur = () => {
     return listen('tauri://blur', () => {
-        if (appWindow.label === 'recognize') {
+        if (getCurrentWindow().label === 'recognize') {
             if (blurTimeout) {
                 clearTimeout(blurTimeout);
             }
-            // 50ms后关闭窗口，因为在 windows 下拖动窗口时会先切换成 blur 再立即切换成 focus
-            // 如果直接关闭将导致窗口无法拖动
             blurTimeout = setTimeout(async () => {
-                await appWindow.close();
+                await getCurrentWindow().close();
             }, 50);
         }
     });
 };
 
 let unlisten = listenBlur();
-// 取消 blur 监听
 const unlistenBlur = () => {
     unlisten.then((f) => {
         f();
     });
 };
 
-// 监听 focus 事件取消 blurTimeout 时间之内的关闭窗口
 void listen('tauri://focus', () => {
     if (blurTimeout) {
         clearTimeout(blurTimeout);
@@ -95,7 +91,6 @@ export default function Recognize() {
     useEffect(() => {
         loadPluginList();
     }, []);
-    // 是否自动关闭窗口
     useEffect(() => {
         if (closeOnBlur !== null && !closeOnBlur) {
             unlistenBlur();
@@ -126,10 +121,10 @@ export default function Recognize() {
                                 if (closeOnBlur) {
                                     unlisten = listenBlur();
                                 }
-                                appWindow.setAlwaysOnTop(false);
+                                getCurrentWindow().setAlwaysOnTop(false);
                             } else {
                                 unlistenBlur();
-                                appWindow.setAlwaysOnTop(true);
+                                getCurrentWindow().setAlwaysOnTop(true);
                             }
                             setPined(!pined);
                         }}

@@ -1,4 +1,4 @@
-import { enable, isEnabled, disable } from 'tauri-plugin-autostart-api';
+import { enable, isEnabled, disable } from '@tauri-apps/plugin-autostart';
 import { DropdownTrigger } from '@nextui-org/react';
 import React, { useState, useEffect } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
@@ -7,13 +7,13 @@ import { DropdownItem } from '@nextui-org/react';
 import { useTranslation } from 'react-i18next';
 import { CardBody } from '@nextui-org/react';
 import { Dropdown } from '@nextui-org/react';
-import { info } from 'tauri-plugin-log-api';
+import { info } from '@tauri-apps/plugin-log';
 import { Button } from '@nextui-org/react';
 import { Switch } from '@nextui-org/react';
 import 'flag-icons/css/flag-icons.min.css';
 import { Input } from '@nextui-org/react';
 import { Card } from '@nextui-org/react';
-import { invoke } from '@tauri-apps/api';
+import { invoke } from '@tauri-apps/api/core';
 import { useTheme } from 'next-themes';
 
 import { useConfig } from '../../../../hooks/useConfig';
@@ -344,9 +344,8 @@ export default function General() {
                                     aria-label='app font'
                                     className='max-h-[50vh] overflow-y-auto'
                                     onAction={(key) => {
-                                        document.documentElement.style.fontFamily = `"${
-                                            key === 'default' ? 'sans-serif' : key
-                                        }","${appFallbackFont === 'default' ? 'sans-serif' : appFallbackFont}"`;
+                                        document.documentElement.style.fontFamily = `"${key === 'default' ? 'sans-serif' : key
+                                            }","${appFallbackFont === 'default' ? 'sans-serif' : appFallbackFont}"`;
                                         setAppFont(key);
                                     }}
                                 >
@@ -390,9 +389,8 @@ export default function General() {
                                     aria-label='app font'
                                     className='max-h-[50vh] overflow-y-auto'
                                     onAction={(key) => {
-                                        document.documentElement.style.fontFamily = `"${
-                                            appFont === 'default' ? 'sans-serif' : appFont
-                                        }","${key === 'default' ? 'sans-serif' : key}"`;
+                                        document.documentElement.style.fontFamily = `"${appFont === 'default' ? 'sans-serif' : appFont
+                                            }","${key === 'default' ? 'sans-serif' : key}"`;
                                         setAppFallbackFont(key);
                                     }}
                                 >

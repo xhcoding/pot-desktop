@@ -1,4 +1,4 @@
-import { fetch } from '@tauri-apps/api/http';
+import { fetch } from '@tauri-apps/plugin-http';
 import { nanoid } from 'nanoid';
 import md5 from 'md5';
 
@@ -17,20 +17,19 @@ export async function translate(text, from, to, options = {}) {
     const str = appid + text + salt + field + secret;
     const sign = md5(str);
 
-    let res = await fetch(url, {
-        query: {
-            q: text,
-            from: from,
-            to: to,
-            appid: appid,
-            salt: salt,
-            sign: sign,
-            domain: field,
-        },
-    });
+    const apiUrl = new URL(url);
+    apiUrl.searchParams.set('q', text);
+    apiUrl.searchParams.set('from', from);
+    apiUrl.searchParams.set('to', to);
+    apiUrl.searchParams.set('appid', appid);
+    apiUrl.searchParams.set('salt', salt);
+    apiUrl.searchParams.set('sign', sign);
+    apiUrl.searchParams.set('domain', field);
+
+    let res = await fetch(apiUrl.toString());
 
     if (res.ok) {
-        let result = res.data;
+        let result = await res.json();
         let target = '';
 
         const { trans_result } = result;
@@ -43,7 +42,7 @@ export async function translate(text, from, to, options = {}) {
             throw JSON.stringify(result);
         }
     } else {
-        throw `Http Request Error\nHttp Status: ${res.status}\n${JSON.stringify(res.data)}`;
+        throw `Http Request Error\nHttp Status: ${res.status}\n${JSON.stringify(await res.json())}`;
     }
 }
 

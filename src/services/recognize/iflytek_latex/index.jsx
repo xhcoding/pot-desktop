@@ -1,4 +1,4 @@
-import { fetch } from '@tauri-apps/api/http';
+import { fetch } from '@tauri-apps/plugin-http';
 import hmacSHA256 from 'crypto-js/hmac-sha256';
 import hashSHA256 from 'crypto-js/sha256';
 import Base64 from 'crypto-js/enc-base64';
@@ -47,10 +47,10 @@ export async function recognize(base64, language, options = {}) {
         },
     });
     if (res.ok) {
-        let result = res.data;
-        if (result.data['region']) {
+        let result = await res.json();
+        if (result.json()['region']) {
             let target = '';
-            for (let i of result.data['region']) {
+            for (let i of result.json()['region']) {
                 target += i['recog']['content'] + '\n';
             }
             target = target.replaceAll(' ifly-latex-begin ', '');
@@ -60,7 +60,7 @@ export async function recognize(base64, language, options = {}) {
             throw JSON.stringify(result);
         }
     } else {
-        throw `Http Request Error\nHttp Status: ${res.status}\n${JSON.stringify(res.data)}`;
+        throw `Http Request Error\nHttp Status: ${res.status}\n${JSON.stringify(await res.json())}`;
     }
 }
 

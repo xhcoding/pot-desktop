@@ -1,35 +1,33 @@
 import { Code, Card, CardBody, Button, Progress, Skeleton } from '@nextui-org/react';
-import { checkUpdate, installUpdate } from '@tauri-apps/api/updater';
+import { check, Update } from '@tauri-apps/plugin-updater';
 import React, { useEffect, useState } from 'react';
-import { appWindow } from '@tauri-apps/api/window';
-import { relaunch } from '@tauri-apps/api/process';
+import { getCurrentWindow } from '@tauri-apps/api/window';
+import { relaunch } from '@tauri-apps/plugin-process';
 import toast, { Toaster } from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
-import { listen } from '@tauri-apps/api/event';
 import ReactMarkdown from 'react-markdown';
 
 import { useConfig, useToastStyle } from '../../hooks';
 import { osType } from '../../utils/env';
-
-let unlisten = 0;
-let eventId = 0;
 
 export default function Updater() {
     const [transparent] = useConfig('transparent', true);
     const [downloaded, setDownloaded] = useState(0);
     const [total, setTotal] = useState(0);
     const [body, setBody] = useState('');
+    const [update, setUpdate] = useState<Update | null>(null);
     const { t } = useTranslation();
     const toastStyle = useToastStyle();
 
     useEffect(() => {
-        if (appWindow.label === 'updater') {
-            appWindow.show();
+        if (getCurrentWindow().label === 'updater') {
+            getCurrentWindow().show();
         }
-        checkUpdate().then(
-            (update) => {
-                if (update.shouldUpdate) {
-                    setBody(update.manifest.body);
+        check().then(
+            (upd) => {
+                if (upd) {
+                    setUpdate(upd);
+                    setBody(upd.body || '');
                 } else {
                     setBody(t('updater.latest'));
                 }
@@ -39,20 +37,25 @@ export default function Updater() {
                 toast.error(e.toString(), { style: toastStyle });
             }
         );
-        if (unlisten === 0) {
-            unlisten = listen('tauri://update-download-progress', (e) => {
-                if (eventId === 0) {
-                    eventId = e.id;
-                }
-                if (e.id === eventId) {
-                    setTotal(e.payload.contentLength);
-                    setDownloaded((a) => {
-                        return a + e.payload.chunkLength;
-                    });
+    }, []);
+
+    const handleUpdate = async () => {
+        if (!update) return;
+        try {
+            await update.downloadAndInstall((event) => {
+                if (event.event === 'Started') {
+                    setTotal(event.json().contentLength || 0);
+                    setDownloaded(0);
+                } else if (event.event === 'Progress') {
+                    setDownloaded((prev) => prev + event.json().chunkLength);
                 }
             });
+            toast.success(t('updater.installed'), { style: toastStyle, duration: 10000 });
+            relaunch();
+        } catch (e) {
+            toast.error(e?.toString() || 'Unknown error', { style: toastStyle });
         }
-    }, []);
+    };
 
     return (
         <div
@@ -136,7 +139,7 @@ export default function Updater() {
                 <Progress
                     aria-label='Downloading...'
                     label={t('updater.progress')}
-                    value={(downloaded / total) * 100}
+                    value={total > 0 ? (downloaded / total) * 100 : 0}
                     classNames={{
                         base: 'w-full px-[80px]',
                         track: 'drop-shadow-md border border-default',
@@ -153,19 +156,9 @@ export default function Updater() {
                 <Button
                     variant='flat'
                     isLoading={downloaded !== 0}
-                    isDisabled={downloaded !== 0}
+                    isDisabled={downloaded !== 0 || !update}
                     color='primary'
-                    onPress={() => {
-                        installUpdate().then(
-                            () => {
-                                toast.success(t('updater.installed'), { style: toastStyle, duration: 10000 });
-                                relaunch();
-                            },
-                            (e) => {
-                                toast.error(e.toString(), { style: toastStyle });
-                            }
-                        );
-                    }}
+                    onPress={handleUpdate}
                 >
                     {downloaded !== 0
                         ? downloaded > total
@@ -177,7 +170,7 @@ export default function Updater() {
                     variant='flat'
                     color='danger'
                     onPress={() => {
-                        appWindow.close();
+                        getCurrentWindow().close();
                     }}
                 >
                     {t('updater.cancel')}
